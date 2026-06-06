@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Alert {
+  id                       String      @id @default(cuid())
+  userId                   String?
+  fullName                 String
+  provisionalLicense       String
+  existingBookingReference String?
+  theoryPassReference      String?
+  preferredLocation        String
+  preferredDateFrom        DateTime
+  preferredDateTo          DateTime
+  preferredTimeFrom        String
+  preferredTimeTo          String
+  phoneNumber              String
+  email                    String
+  channels                 String[]
+  status                   AlertStatus @default(monitoring)
+  cadenceMinutes           Int         @default(10)
+  nextCheckAt              DateTime
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+  monitorRuns              MonitorRun[]
+  user                     User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model MonitorRun {
+  id            String     @id @default(cuid())
+  alertId       String
+  startedAt     DateTime   @default(now())
+  finishedAt    DateTime?
+  foundMatch    Boolean    @default(false)
+  summary       String?
+  errorMessage  String?
+  challengeSeen Boolean    @default(false)
+  alert         Alert      @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([alertId, startedAt])
+}
+
+enum AlertStatus {
+  monitoring
+  paused
+  needs_user_action
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  alerts       Alert[]
+}

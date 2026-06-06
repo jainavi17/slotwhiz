@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SlotWhiz
 
-## Getting Started
+SlotWhiz helps learners monitor earlier practical test slots and get alerts.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router (frontend + API routes)
+- Prisma + PostgreSQL-compatible datasource
+- BullMQ + Redis worker for recurring 10-minute monitoring jobs
+- Docker Compose for one-command local startup
+
+## Quick Start (Docker Compose)
+
+1. Ensure Docker Desktop is running.
+2. From this project root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Open [http://localhost:3001](http://localhost:3001).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Local defaults are in `.env`:
 
-## Learn More
+```env
+DATABASE_URL="postgresql://slotwhiz:slotwhiz@postgres:5432/slotwhiz?schema=public"
+REDIS_URL="redis://redis:6379"
+AUTH_SECRET="change-this-to-a-long-random-secret"
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Switch to CockroachDB
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Replace only `DATABASE_URL` with your Cockroach URL, for example:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+DATABASE_URL="postgresql://<user>:<password>@<cockroach-host>:26257/slotwhiz?sslmode=require"
+```
 
-## Deploy on Vercel
+No other code/config changes are required.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Local Development (without Docker)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm install
+npm run prisma:generate
+npm run db:push
+npm run dev
+```
+
+In a second terminal, run the worker:
+
+```bash
+npm run worker
+```
+
+## Authentication Flow
+
+- `GET /` is the public marketing page.
+- Users sign up at `/signup` and sign in at `/signin`.
+- The alert workflow at `/start` is protected and requires authentication.
+- Session auth uses an HTTP-only cookie signed with `AUTH_SECRET`.
+
+## Phase 2 Backend Features Implemented
+
+- Alert records persisted in PostgreSQL via Prisma
+- Alert validation with Zod
+- Recurring BullMQ jobs (10-minute cadence) per alert
+- Dedicated worker process to run monitoring attempts and store run history
+- Alert status updates (`monitoring` and `needs_user_action`)
+- User authentication (signup/signin/signout + protected alert creation)
