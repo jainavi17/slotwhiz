@@ -10,7 +10,7 @@
     "worker": "node worker.mjs",
     "prisma:generate": "prisma generate",
     "db:push": "prisma db push",
-    "start:docker": "npm run db:push && next start"
+    "start:docker": "sh scripts/docker-start.sh"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
